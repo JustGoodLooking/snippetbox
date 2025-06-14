@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"html/template"
@@ -18,11 +17,11 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 		app.serverError(w, r, err)
 		return
 	}
-	for _, snippet := range snippets {
-		data, _ := json.MarshalIndent(snippet, "", "  ")
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(data)
-	}
+	//for _, snippet := range snippets {
+	//	data, _ := json.MarshalIndent(snippet, "", "  ")
+	//	w.Header().Set("Content-Type", "application/json")
+	//	w.Write(data)
+	//}
 
 	files := []string{
 		"./ui/html/base.tmpl",
@@ -35,8 +34,11 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 		app.serverError(w, r, err)
 		return
 	}
+	data := templateData{
+		Snippets: snippets,
+	}
 
-	err = ts.ExecuteTemplate(w, "base", nil)
+	err = ts.ExecuteTemplate(w, "base", data)
 	if err != nil {
 		app.serverError(w, r, err)
 	}
@@ -60,11 +62,31 @@ func (app *application) snippetView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Write the snippet data as a plain-text HTTP response body.
-	//fmt.Fprintf(w, "%+v", snippet)
-	data, _ := json.MarshalIndent(snippet, "", "  ")
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(data)
+	files := []string{
+		"./ui/html/base.tmpl",
+		"./ui/html/partials/nav.tmpl",
+		"./ui/html/pages/view.tmpl",
+	}
+
+	ts, err := template.ParseFiles(files...)
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	data := templateData{
+		Snippet: snippet,
+	}
+
+	err = ts.ExecuteTemplate(w, "base", data)
+	if err != nil {
+		app.serverError(w, r, err)
+	}
+
+	//
+	//data, _ := json.MarshalIndent(snippet, "", "  ")
+	//w.Header().Set("Content-Type", "application/json")
+	//w.Write(data)
 }
 
 func snippetCreate(w http.ResponseWriter, r *http.Request) {
