@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"database/sql"
 	"flag"
 	"html/template"
@@ -16,9 +17,9 @@ import (
 )
 
 type application struct {
-	logger        *slog.Logger
-	snippet       *models.SnippetModel
-	templateCache map[string]*template.Template
+	logger         *slog.Logger
+	snippet        *models.SnippetModel
+	templateCache  map[string]*template.Template
 	sessionManager *scs.SessionManager
 }
 
@@ -51,17 +52,25 @@ func main() {
 	sessionManager.Cookie.Secure = true
 
 	app := &application{
-		logger:        logger,
-		snippet:       &models.SnippetModel{DB: db},
-		templateCache: templateCache,
+		logger:         logger,
+		snippet:        &models.SnippetModel{DB: db},
+		templateCache:  templateCache,
 		sessionManager: sessionManager,
+	}
+
+	tlsConfig := &tls.Config{
+		CurvePreferences: []tls.CurveID{tls.X25519, tls.CurveP256},
 	}
 
 	// Initialize a new http.Server sturct for customizable control the server's configuration
 	srv := &http.Server{
-		Addr: *addr,
-		Handler: app.routes(),
-		ErrorLog: slog.NewLogLogger(logger.Handler(), slog.LevelError),
+		Addr:         *addr,
+		Handler:      app.routes(),
+		ErrorLog:     slog.NewLogLogger(logger.Handler(), slog.LevelError),
+		TLSConfig:    tlsConfig,
+		IdleTimeout:  time.Minute,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
 	}
 
 	logger.Info("starting server", "addr", *addr)
