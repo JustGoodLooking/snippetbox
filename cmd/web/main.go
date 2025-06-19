@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"database/sql"
 	"flag"
+	"github.com/go-playground/form/v4"
 	"html/template"
 	"log/slog"
 	"net/http"
@@ -19,8 +20,10 @@ import (
 type application struct {
 	logger         *slog.Logger
 	snippet        *models.SnippetModel
+	users          *models.UserModel
 	templateCache  map[string]*template.Template
 	sessionManager *scs.SessionManager
+	formDecoder    *form.Decoder
 }
 
 func main() {
@@ -45,6 +48,9 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Initialize a decoder instance..
+	formDecoder := form.NewDecoder()
+
 	// session manager
 	sessionManager := scs.New()
 	sessionManager.Store = mysqlstore.New(db)
@@ -54,8 +60,10 @@ func main() {
 	app := &application{
 		logger:         logger,
 		snippet:        &models.SnippetModel{DB: db},
+		users:          &models.UserModel{DB: db},
 		templateCache:  templateCache,
 		sessionManager: sessionManager,
+		formDecoder:    formDecoder,
 	}
 
 	tlsConfig := &tls.Config{
